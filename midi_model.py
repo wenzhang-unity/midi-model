@@ -27,7 +27,7 @@ class MIDIModel(pl.LightningModule):
             self.net_token = self.net_token.to_bettertransformer()
         self.lm_head = nn.Linear(n_embd, tokenizer.vocab_size, bias=False)
 
-    def forward_token(self, hidden_state, x=None):
+    def forward_token(self, hidden_state, x):
         """
 
         :param hidden_state: (batch_size, n_embd)
@@ -35,9 +35,9 @@ class MIDIModel(pl.LightningModule):
         :return: (batch_size, 1 + token_sequence_length, vocab_size)
         """
         hidden_state = hidden_state.unsqueeze(1)  # (batch_size, 1, n_embd)
-        if x is not None:
-            x = self.net_token.embed_tokens(x)
-            hidden_state = torch.cat([hidden_state, x], dim=1)
+        # if x is not None:
+        x = self.net_token.embed_tokens(x)
+        hidden_state = torch.cat([hidden_state, x], dim=1)
         hidden_state = self.net_token.forward(inputs_embeds=hidden_state).last_hidden_state
         return self.lm_head(hidden_state)
 
@@ -87,7 +87,7 @@ class MIDIModel(pl.LightningModule):
             while cur_len < max_len:
                 end = False
                 hidden = self.forward(input_tensor)[0, -1].unsqueeze(0)
-                next_token_seq = None
+                next_token_seq = torch.empty(1, 0)
                 event_name = ""
                 for i in range(max_token_seq):
                     mask = torch.zeros(tokenizer.vocab_size, dtype=torch.int64, device=self.device)
